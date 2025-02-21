@@ -95,7 +95,7 @@ async def daily_word(context: ContextTypes.DEFAULT_TYPE):
 # JobQueue 설정
 async def post_init(application):
     job_queue = application.job_queue
-    kst_time = datetime.time(hour=15, minute=12, second=50, tzinfo=KST)
+    kst_time = datetime.time(hour=9, minute=0, second=0, tzinfo=KST)
     job_queue.run_daily(daily_word, time=kst_time)
 
 # 메인 함수
