@@ -63,14 +63,15 @@ def generate_word_list():
 def get_previous_words():
     files = sorted(f for f in os.listdir(LOG_DIR) if f.endswith("_words.txt"))
     merged_text = []
+    yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+    file_name = f"{yesterday}_words.txt"
+    file_path = os.path.join(LOG_DIR, file_name)
 
-    for file in files:
-        file_path = os.path.join(LOG_DIR, file)
+    if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
-            date = file.split("_")[0]
-            merged_text.append(f"\n📅 {date} 단어 목록:\n" + f.read())
-
-    return "\n".join(merged_text) if merged_text else "이전 단어 목록이 없습니다."
+            return f"\n📅 {yesterday} 단어 목록:\n" + f.read()
+    else:
+        return "📖 전날 단어 목록이 없습니다."
 
 # /start 명령어 처리
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
