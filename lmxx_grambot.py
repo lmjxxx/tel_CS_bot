@@ -31,10 +31,12 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 # GPT API를 통해 단어 목록 생성 및 로그 저장
 def generate_word_list():
     prompt = (
-        "Generate a list of 50 English words suitable for university undergraduate and conversation level with their Korean translations. "
-        "Output should be in the format 'English word - Korean meaning' with one word per line. "
+        "Generate a list of 50 English words commonly used in daily conversation and practical situations, "
+        "along with their Korean translations. Include words from various parts of speech (nouns, verbs, adjectives, adverbs). "
+        "For words with multiple meanings, provide the most common 2-3 meanings in the format 'English word - Korean meaning1, meaning2'. "
+        "Exclude strictly academic or technical vocabulary. Output should be one word per line, like this: 'word - meaning1, meaning2'. "
         "No additional explanation, just the word list."
-    )    
+    )
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
