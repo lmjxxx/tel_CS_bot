@@ -31,12 +31,11 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 # GPT API를 통해 단어 목록 생성 및 로그 저장
 def generate_word_list():
     prompt = (
-        "Generate a list of 50 intermediate to advanced-level English words commonly used in daily conversation and practical situations, "
-        "along with their Korean translations. Include words from various parts of speech (nouns, verbs, adjectives, adverbs). "
-        "For words with multiple meanings, provide the most common 2-3 meanings in the format 'English word - Korean meaning1, meaning2'. "
-        "Ensure the words are useful for real-life conversations rather than purely academic or technical vocabulary. "
-        "Output should be one word per line, like this: 'word - meaning1, meaning2'. "
-        "No additional explanation, just the word list."
+        "You are a creative storyteller. Write a short narrative story in English that feels like a small storybook. "
+        "The story must not be a TextbookReading or Journalistic Reading. "
+        "It should only contain the content of the story itself—no additional explanations, notes, or disclaimers. "
+        "Use imaginative elements, descriptive language, and leave a bit of mystery or room for speculation. "
+        "Keep the story concise but evocative, and provide a soft or thought-provoking conclusion that fits the narrative."
     )
 
     try:
