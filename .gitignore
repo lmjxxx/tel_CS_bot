@@ -12,7 +12,7 @@ __pycache__/
 
 # Distribution / packaging
 gramtelbot
-word_logs
+story_logs
 .Python
 build/
 develop-eggs/
