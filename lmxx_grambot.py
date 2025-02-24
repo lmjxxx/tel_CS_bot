@@ -21,15 +21,15 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 # 한국 시간대 설정
 KST = pytz.timezone("Asia/Seoul")
 
-# 로그 디렉터리 설정
-LOG_DIR = "word_logs"
+# 로그 디렉터리 설정 (기존 'word_logs' → 'story_logs'로 변경)
+LOG_DIR = "story_logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # 로깅 설정
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# GPT API를 통해 단어 목록 생성 및 로그 저장
-def generate_word_list():
+# GPT API를 통해 단편 이야기를 생성 및 로그 저장
+def generate_story():
     prompt = (
         "You are a creative storyteller. Write a short narrative story in English that feels like a small storybook. "
         "The story must not be a TextbookReading or Journalistic Reading. "
@@ -45,60 +45,60 @@ def generate_word_list():
             temperature=0.7,
             max_tokens=500
         )
-        word_list = response.choices[0].message.content.strip()
+        story_content = response.choices[0].message.content.strip()
 
         # 오늘 날짜 기반 파일 경로 설정
         today = datetime.datetime.now(KST).strftime("%Y-%m-%d")
-        file_path = os.path.join(LOG_DIR, f"{today}_words.txt")
+        file_path = os.path.join(LOG_DIR, f"{today}_story.txt")
 
-        # 단어 목록 로그 파일에 저장
+        # 이야기 로그 파일에 저장
         with open(file_path, "w", encoding="utf-8") as file:
-            file.write(word_list)
+            file.write(story_content)
 
-        logging.info(f"단어 목록이 {file_path}에 성공적으로 저장되었습니다.")
-        return word_list
+        logging.info(f"이야기가 {file_path}에 성공적으로 저장되었습니다.")
+        return story_content
 
     except Exception as e:
         logging.error(f"OpenAI API 호출 중 오류 발생: {e}")
-        return "⚠️ 단어 목록을 생성하는 동안 오류가 발생했습니다."
+        return "⚠️ 이야기를 생성하는 동안 오류가 발생했습니다."
 
-# 이전 단어 병합
-def get_previous_words():
-    yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-    file_name = f"{yesterday}_words.txt"
+# 이전 이야기 병합
+def get_previous_story():
+    yesterday = (datetime.datetime.now(KST) - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+    file_name = f"{yesterday}_story.txt"
     file_path = os.path.join(LOG_DIR, file_name)
 
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
-            return f"\n📅 {yesterday} 단어 목록:\n" + f.read()
+            return f"\n📅 {yesterday}의 이야기:\n" + f.read()
     else:
-        return "📖 전날 단어 목록이 없습니다."
+        return "📖 전날 이야기가 없습니다."
 
 # /start 명령어 처리
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("안녕하세요! /words 명령어를 사용해 단어 리스트를 받을 수 있습니다.")
+    await update.message.reply_text("안녕하세요! /story 명령어를 사용해 오늘의 이야기를 받을 수 있습니다.")
 
-# /words 명령어로 단어 목록 제공
-async def words(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("GPT API를 통해 단어 목록을 생성 중입니다. 잠시만 기다려주세요.")
-    word_list = generate_word_list()
-    previous_words = get_previous_words()
+# /story 명령어로 이야기 제공
+async def story(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("GPT API를 통해 이야기를 생성 중입니다. 잠시만 기다려주세요.")
+    story_content = generate_story()
+    previous_story = get_previous_story()
 
-    await update.message.reply_text(f"📚 오늘의 단어 목록:\n\n{word_list} \n\n 이전 단어 목록:\n{previous_words}")
+    await update.message.reply_text(f"📚 오늘의 이야기:\n\n{story_content}\n\n📖 이전 이야기:\n{previous_story}")
 
-# 매일 단어 자동 전송
-async def daily_word(context: ContextTypes.DEFAULT_TYPE):
-    word_list = generate_word_list()
-    previous_words = get_previous_words()
+# 매일 자동으로 이야기 전송
+async def daily_story(context: ContextTypes.DEFAULT_TYPE):
+    story_content = generate_story()
+    previous_story = get_previous_story()
 
-    message = f"📚 오늘의 단어 목록:\n\n{word_list}\n\n📖 이전 단어 목록:\n{previous_words}"
+    message = f"📚 오늘의 이야기:\n\n{story_content}\n\n📖 이전 이야기:\n{previous_story}"
     await context.bot.send_message(chat_id=CHAT_ID, text=message)
 
 # JobQueue 설정
 async def post_init(application):
     job_queue = application.job_queue
     kst_time = datetime.time(hour=9, minute=0, second=0, tzinfo=KST)
-    job_queue.run_daily(daily_word, time=kst_time)
+    job_queue.run_daily(daily_story, time=kst_time)
 
 # 메인 함수
 def main():
@@ -106,7 +106,7 @@ def main():
 
     # 명령어 핸들러 등록
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("words", words))
+    app.add_handler(CommandHandler("story", story))
 
     # 봇 실행
     app.run_polling()
