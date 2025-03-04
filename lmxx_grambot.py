@@ -96,7 +96,7 @@ async def daily_story(context: ContextTypes.DEFAULT_TYPE):
 # JobQueue 설정
 async def post_init(application):
     job_queue = application.job_queue
-    kst_time = datetime.time(hour=18, minute=27, second=0, tzinfo=KST)
+    kst_time = datetime.time(hour=9, minute=0, second=0, tzinfo=KST)
     job_queue.run_daily(daily_story, time=kst_time)
 
 # 메인 함수
