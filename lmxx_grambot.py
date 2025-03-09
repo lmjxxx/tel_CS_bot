@@ -29,50 +29,78 @@ os.makedirs(LOG_DIR, exist_ok=True)
 # 로깅 설정
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
+# 텔레그램 메시지 길이 제한
+TELEGRAM_MESSAGE_LIMIT = 4096
+
+CS_TOPICS = (
+    "Operating Systems and Process Management",
+    "Data Structures",
+    "Algorithm Design",
+    "Computer Networks and Protocols",
+    "Databases and SQL Optimization",
+    "Software Engineering Principles",
+    "Compiler Design and Programming Languages",
+    "Cybersecurity Fundamentals",
+    "Cloud Computing and Distributed Systems",
+    "Artificial Intelligence",
+    "Deep Learning",
+    "Machine Learning",
+    "Data Science",
+    "Blockchain",
+    "Decentralized Finance (DeFi)",
+    "Quantum Computing",
+    "Cryptography",
+    "Big Data Analytics and Data Engineering",
+    "IoT (Internet of Things)",
+    "Edge Computing",
+    "Augmented Reality (AR)",
+    "Virtual Reality (VR)"
+)
+
+def split_message(text, limit=TELEGRAM_MESSAGE_LIMIT):
+    """ 메시지를 Telegram 최대 길이 (4096자) 이하로 분할 """
+    messages = []
+    while len(text) > limit:
+        split_index = text.rfind("\n", 0, limit)  # 최대 길이를 초과하지 않도록 줄바꿈 단위로 자름
+        if split_index == -1:  # 줄바꿈 없으면 강제 자름
+            split_index = limit
+        messages.append(text[:split_index])
+        text = text[split_index:].strip()
+    messages.append(text)
+    return messages
+
 def generate_tech_content():
-    cs_topics = [
-        # 전통적인 CS 개념
-        "Operating Systems and Process Management",
-        "Data Structures and Algorithm Design",
-        "Computer Networks and Protocols",
-        "Databases and SQL Optimization",
-        "Software Engineering Principles",
-        "Compiler Design and Programming Languages",
-        "Cybersecurity Fundamentals",
-        "Cloud Computing and Distributed Systems",
+    selected_topic = random.choice(CS_TOPICS)
 
-        # 최신 IT 트렌드
-        "Artificial Intelligence and Deep Learning",
-        "Machine Learning and Data Science",
-        "Blockchain and Decentralized Finance (DeFi)",
-        "Quantum Computing and Cryptography",
-        "Big Data Analytics and Data Engineering",
-        "IoT (Internet of Things) and Edge Computing",
-        "Augmented Reality (AR) and Virtual Reality (VR)"
-    ]
-
-    # 랜덤으로 대주제 선택
-    selected_topic = random.choice(cs_topics)
-
-    # 프롬프트에서 세부 주제도 자동 선택하도록 요청
     prompt = (
-        f"You are an expert in Computer Science. Select a key subtopic related to the following major topic: {selected_topic}. "
-        f"Provide a structured explanation focusing on both the major topic and the selected subtopic. "
-        f"The explanation should include the following sections:\n\n"
+        f"You are an expert in Computer Science. Choose a **key subtopic** related to the following major topic: {selected_topic}. "
+        f"Ensure the subtopic is **highly relevant and commonly discussed** within this field.\n\n"
+        f"Provide a structured explanation including the following sections:\n\n"
+        
         f"1. **Introduction** - Briefly introduce {selected_topic} and its significance.\n"
         f"2. **Core Concepts** - Explain the fundamental principles and key areas of {selected_topic}.\n"
-        f"3. **Key Subtopic** - Automatically select and analyze a crucial subtopic related to {selected_topic}. "
-        f"Explain its importance, challenges, and how it fits into the broader field.\n"
-        f"4. **Real-World Applications** - Discuss where {selected_topic} and the selected subtopic are applied in industry or technology.\n\n"
-        f"Keep the explanation clear and concise, making it accessible for those with a basic understanding of Computer Science."
+        f"3. **Key Subtopic** - Select and analyze a crucial subtopic within {selected_topic}. Provide a detailed explanation covering:\n"
+        f"   - **Definition**: What it is and why it matters.\n"
+        f"   - **Mechanism**: How it works, including key components and workflow.\n"
+        f"   - **Challenges & Limitations**: Potential issues and drawbacks.\n"
+        f"   - **Comparison**: If applicable, compare it with alternative approaches.\n"
+        f"   - **Future Trends**: How this subtopic is evolving in modern computing.\n\n"
+        
+        f"4. **Real-World Applications** - List major fields where {selected_topic} and the selected subtopic are applied, with a one-line explanation for each:\n"
+        f"   - **Industry/Technology 1**: [One-sentence explanation]\n"
+        f"   - **Industry/Technology 2**: [One-sentence explanation]\n"
+        f"   - **Industry/Technology 3**: [One-sentence explanation]\n\n"
+        
+        f"Ensure the explanation is clear, well-structured, and suitable for those with a basic understanding of Computer Science."
     )
+
 
     try:
         response = ai_client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
-            max_tokens=1000
+            max_tokens=1500  # 최대 토큰을 줄여서 너무 긴 응답 방지
         )
         tech_content = response.choices[0].message.content.strip()
 
@@ -92,19 +120,34 @@ def generate_tech_content():
 
 # /start 명령어 처리
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome! Use the /tech command to get a detailed explanation on a trending technology topic.")
+    topics_message = "**📌 Available CS & Tech Topics:**\n\n" + "\n".join(f"- {topic}" for topic in CS_TOPICS)
+    
+    welcome_message = (
+        "👋 Welcome! Use the /tech command to get a detailed explanation on a trending technology topic.\n\n"
+        "🔹 Here are the topics you can explore:\n\n"
+        f"{topics_message}\n\n"
+        "📝 A subtopic within these fields will be automatically selected for a detailed explanation."
+    )
 
-# /tech 명령어로 기술 콘텐츠 제공
+    await update.message.reply_text(welcome_message, parse_mode="Markdown")
+
+
+# /tech 명령어로 기술 콘텐츠 제공 (메시지 길이 제한 적용)
 async def tech_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Generating an in-depth tech explanation, please wait...")
     tech_content = generate_tech_content()
-    await update.message.reply_text(f"📚 Today's Tech Topic:\n\n{tech_content}")
 
-# 매일 자동으로 기술 콘텐츠 전송
+    messages = split_message(tech_content)
+    for msg in messages:
+        await update.message.reply_text(msg)  # 길이 제한을 준수하며 분할된 메시지 전송
+
+# 매일 자동으로 기술 콘텐츠 전송 (메시지 길이 제한 적용)
 async def daily_tech_update(context: ContextTypes.DEFAULT_TYPE):
     tech_content = generate_tech_content()
-    message = f"📚 Today's Tech Topic:\n\n{tech_content}"
-    await context.bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+    messages = split_message(tech_content)
+
+    for msg in messages:
+        await context.bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=msg)
 
 # JobQueue 설정
 async def setup_job_queue(application):
